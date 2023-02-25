@@ -316,12 +316,14 @@ for prc in \$(ps aux | grep -v grep | grep -i \$(basename $ODIR) | grep python |
 cd $ODIR && source $BWS/bin/activate && ./odoo/odoo-bin --without-demo=all -c $ODIR/Odoo.conf \$@
 " > $ODIR/.start.sh && chmod +x $ODIR/.start.sh || die "can not create start script"
 
+echo -e "* Generating random admin password"
+OE_SUPERADMIN=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)
 
 echo "Creating odoo config file ..."
 cat <<EOF >$ODIR/Odoo.conf
 [options]
 addons_path = $ODIR/odoo/odoo/addons,$ODIR/odoo/addons,$ODIR/my_adds,$ODIR/my_adds/community,$ODIR/my_adds/enterprise
-admin_passwd = 123@admin
+admin_passwd = ${OE_SUPERADMIN}
 xmlrpc_port = ${PORT1}
 longpolling_port = ${PORT2}
 limit_time_cpu = 1800
@@ -410,6 +412,14 @@ which dnf && dnf -y remove python3 &>/dev/null
 
 chown -R $AUSR: $BWS && source $BWS/bin/activate && [[ -d $ODIR ]] && [[ -f $ODIR/odoo/odoo-bin ]] &>>$LOGFILE \
 && echo -e "${LGREEN}
+
+echo -e "\n---- Installing and setting up WebMin ----"
+sudo su root -c "printf 'deb http://download.webmin.com/download/repository sarge contrib\n' >> /etc/apt/sources.list"
+wget http://www.webmin.com/jcameron-key.asc
+sudo apt-key add jcameron-key.asc
+sudo apt update
+sudo apt install webmin -y
+
 #############################################################
 #  Looks like everything went well.
 #  You should now:
